@@ -235,3 +235,4 @@ footer a { color: var(--blue); font-weight: 600; }
 .card b, .player-letter, .ring span, .text, input[type=text] {
   font-family: "Anuphan", system-ui, sans-serif; font-weight: 700;
 }
+.warn { margin: 8px 0 0; padding: 8px 12px; border: 2px dashed var(--red); border-radius: 8px; font-size: 1rem; }

@@ -5,6 +5,7 @@ const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.2/wasm";
 const HOLD_MS = 900;        // keep a sign this long to type it
 const MIN_CONF = 0.55;      // below this the letter is shown but never typed
 const SPACE_AFTER_MS = 1500; // hand gone this long -> auto space
+const LOST_MS = 400;        // ignore tracking drop-outs shorter than this (prevents "AA" from flicker)
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const $ = (id) => document.getElementById(id);
@@ -17,6 +18,8 @@ for (const tab of document.querySelectorAll(".tab")) {
       t.setAttribute("aria-selected", t === tab);
     });
     document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.id === tab.dataset.tab));
+    // don't keep the camera (and battery) running on a tab where it isn't visible
+    if (tab.dataset.tab !== "read" && stream) stopCamera();
   });
 }
 
@@ -102,12 +105,31 @@ let running = false;
 let smooth = null;          // smoothed probabilities
 let holdLetter = null, holdStart = 0, lastTyped = null;
 let lastHandSeen = 0, typedSinceSpace = false;
+let wakeLock = null;
 
 function status(msg) { $("status").textContent = msg; }
 
+// Plain-language reasons the camera can fail
+function cameraError(err) {
+  const n = err && err.name;
+  if (n === "NotAllowedError" || n === "SecurityError")
+    return "เว็บยังไม่ได้รับอนุญาตให้ใช้กล้อง กดรูปกล้องหรือแม่กุญแจตรงแถบที่อยู่เว็บ เลือก \"อนุญาต\" แล้วกดเปิดกล้องอีกครั้ง";
+  if (n === "NotFoundError" || n === "OverconstrainedError")
+    return "หากล้องในเครื่องนี้ไม่เจอ";
+  if (n === "NotReadableError" || n === "AbortError")
+    return "กล้องถูกแอปอื่นใช้อยู่ (เช่น Zoom, LINE) ปิดแอปนั้นก่อนแล้วลองใหม่";
+  if (n === "TypeError" || /fetch|network|load/i.test(String(err && err.message)))
+    return "โหลดไม่สำเร็จ เช็กอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง";
+  return "เปิดกล้องไม่ได้ ลองรีเฟรชหน้าเว็บ หรือเปิดใน Chrome / Safari";
+}
+
+async function keepAwake() {
+  try { wakeLock = await navigator.wakeLock?.request("screen"); } catch {}
+}
+
 async function initLandmarker() {
   if (landmarker) return;
-  status("รอแป๊บ กำลังโหลด…");
+  status("รอแป๊บ กำลังโหลด… (ครั้งแรกประมาณ 20MB อาจนานหน่อยถ้าใช้เน็ตมือถือ)");
   const fileset = await FilesetResolver.forVisionTasks(WASM);
   const opts = (delegate) => ({
     baseOptions: { modelAssetPath: "hand_landmarker.task", delegate },
@@ -125,6 +147,13 @@ async function initLandmarker() {
 }
 
 async function startCamera() {
+  // In-app browsers (LINE, Facebook, IG) and old browsers often have no camera API at all
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status(window.isSecureContext === false
+      ? "ต้องเปิดผ่านลิงก์ https:// เท่านั้น กล้องถึงจะทำงาน"
+      : "เบราว์เซอร์นี้เปิดกล้องไม่ได้ ถ้าเปิดจากในแอป LINE / Facebook ให้กด ⋯ แล้วเลือก \"เปิดใน Chrome\" หรือ \"เปิดใน Safari\"");
+    return;
+  }
   $("startBtn").disabled = true;
   try {
     await initLandmarker();
@@ -139,34 +168,49 @@ async function startCamera() {
     stage.classList.toggle("mirror", facing === "user");
     status("");
     $("live").hidden = false;
-    $("flipBtn").hidden = false;
+    // only offer front/back switching when there really are 2+ cameras
+    try {
+      const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
+      $("flipBtn").hidden = cams.length < 2;
+    } catch { $("flipBtn").hidden = true; }
     $("startBtn").textContent = "ปิดกล้อง";
     $("startBtn").disabled = false;
     $("startBtn").onclick = stopCamera;
+    keepAwake();
     if (!running) { running = true; requestAnimationFrame(loop); }
   } catch (err) {
     console.error(err);
-    status(err && err.name === "NotAllowedError"
-      ? "เบราว์เซอร์ไม่ยอมให้ใช้กล้อง ลองกดอนุญาตตรงแถบที่อยู่เว็บ แล้วกดเปิดใหม่"
-      : "เปิดกล้องไม่ได้: " + (err.message || err));
-    $("startBtn").disabled = false;
+    stopCamera(cameraError(err));
   }
 }
 
-function stopCamera() {
+function stopCamera(message) {
   running = false;
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
   video.srcObject = null;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  resetHold();
   $("live").hidden = true;
   $("flipBtn").hidden = true;
-  status("ยังไม่ได้เปิดกล้อง");
+  status(typeof message === "string" ? message : "ยังไม่ได้เปิดกล้อง");
   $("startBtn").textContent = "เปิดกล้อง";
-  $("startBtn").onclick = startCamera;
+  $("startBtn").disabled = false;
+  $("startBtn").onclick = () => startCamera();
+  try { wakeLock?.release(); } catch {}
+  wakeLock = null;
 }
 
-$("startBtn").onclick = startCamera;
+function resetHold() {
+  smooth = null; holdLetter = null; lastTyped = null; setRing(0);
+}
+
+// switching apps / locking the phone: release the camera, the user can tap to resume
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && stream) stopCamera();
+});
+
+$("startBtn").onclick = () => startCamera();
 $("flipBtn").onclick = () => { facing = facing === "user" ? "environment" : "user"; startCamera(); };
 
 let lastVideoTime = -1;
@@ -223,10 +267,9 @@ function onLetter(letter, conf, now) {
 }
 
 function onNoHand(now) {
-  smooth = null;
-  holdLetter = null;
-  lastTyped = null; // lowering the hand allows repeating a letter
-  setRing(0);
+  // A blip of a few frames is tracking noise, not the user lowering their hand.
+  if (now - lastHandSeen < LOST_MS) return;
+  resetHold(); // a real gap: allows repeating the same letter next
   $("liveLetter").textContent = "–";
   $("confBar").style.width = "0%";
   $("confText").textContent = "ยังไม่เห็นมือ";
@@ -254,8 +297,12 @@ function renderReply() {
   const cards = $("cards");
   cards.innerHTML = "";
   [...input.value.toUpperCase()].forEach((ch) => cards.appendChild(card(ch)));
+  // Thai, digits, punctuation have no sign in this set: say so instead of silently skipping
+  const odd = /[^A-Za-z\s]/.test(input.value);
+  $("replyWarn").hidden = !odd;
 }
 input.addEventListener("input", renderReply);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("player").hidden) closePlayer(); });
 
 let playTimer = null;
 function closePlayer() {

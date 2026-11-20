@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign Talk</title>
+  <meta name="description" content="แปลตัวอักษรภาษามือ (ASL) จากกล้องเป็นข้อความ และแปลงข้อความกลับเป็นท่ามือ">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✋</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>✋ Sign Talk</h1>
+    <p class="sub">คุยกันด้วยการสะกดตัวอักษรภาษามือ (ASL A–Z)</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab active" data-tab="read" aria-selected="true">👀 อ่านภาษามือ</button>
+    <button role="tab" class="tab" data-tab="reply" aria-selected="false">⌨️ ตอบกลับ</button>
+    <button role="tab" class="tab" data-tab="learn" aria-selected="false">📖 ท่ามือ A–Z</button>
+  </nav>
+
+  <main>
+    <!-- READ: camera -> text -->
+    <section id="read" class="panel active">
+      <div class="stage">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="status" class="status">กดปุ่มด้านล่างเพื่อเปิดกล้อง</div>
+        <div class="live" id="live" hidden>
+          <div class="ring"><svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="16"/><circle id="ringFill" class="fill" cx="18" cy="18" r="16"/></svg><span id="liveLetter">–</span></div>
+          <div class="conf"><div id="confBar"></div></div>
+          <small id="confText"></small>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="startBtn" class="primary">📷 เปิดกล้อง</button>
+        <button id="flipBtn" hidden>🔄 สลับกล้อง</button>
+      </div>
+
+      <div class="output" aria-live="polite">
+        <div id="text" class="text"><span class="placeholder">ตัวอักษรที่อ่านได้จะขึ้นตรงนี้…</span></div>
+        <div class="row">
+          <button id="spaceBtn">␣ เว้นวรรค</button>
+          <button id="backBtn">⌫ ลบ</button>
+          <button id="clearBtn">🗑 ล้าง</button>
+          <button id="speakBtn" class="primary">🔊 อ่านออกเสียง</button>
+        </div>
+      </div>
+
+      <details class="tips">
+        <summary>วิธีใช้ให้แม่น</summary>
+        <ul>
+          <li>ชูมือข้างเดียวให้อยู่กลางจอ เห็นทั้งมือ แสงสว่างพอ</li>
+          <li><b>ค้างท่าไว้ประมาณ 1 วินาที</b> จนวงกลมเต็ม ตัวอักษรจะถูกพิมพ์</li>
+          <li>ถ้าจะพิมพ์ตัวซ้ำ (เช่น LL) ให้ลดมือลงแป๊บนึงแล้วทำใหม่</li>
+          <li>เอามือออกจากกล้องนานกว่า 1.5 วินาที = เว้นวรรคอัตโนมัติ</li>
+          <li>J กับ Z ใน ASL จริงต้องขยับมือ แอปนี้ดูจากท่านิ่ง เลยอาจแม่นน้อยกว่าตัวอื่น</li>
+          <li>ใช้มือถือหันกล้องหลังไปที่อีกฝ่ายได้ (ปุ่ม “สลับกล้อง”)</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- REPLY: text -> signs -->
+    <section id="reply" class="panel">
+      <label for="replyInput" class="label">พิมพ์คำตอบ (ภาษาอังกฤษ)</label>
+      <input id="replyInput" type="text" autocomplete="off" autocapitalize="characters" placeholder="เช่น HELLO" maxlength="60">
+      <div class="row">
+        <button id="playBtn" class="primary">▶ โชว์ทีละตัว</button>
+        <button id="replySpeakBtn">🔊 อ่านออกเสียง</button>
+      </div>
+      <div id="player" class="player" hidden>
+        <img id="playerImg" alt="">
+        <div id="playerLetter" class="player-letter"></div>
+        <button id="playerClose" class="close" aria-label="ปิด">✕</button>
+      </div>
+      <div id="cards" class="cards"></div>
+      <p class="hint">หันจอให้อีกฝ่ายดู หรือกด “โชว์ทีละตัว” เพื่อขึ้นท่ามือทีละตัวแบบเต็มจอ</p>
+    </section>
+
+    <!-- LEARN: cheat sheet -->
+    <section id="learn" class="panel">
+      <p class="hint">ท่ามือจาก dataset ที่ถ่ายเอง — ลองทำตามหน้ากล้องในแท็บ “อ่านภาษามือ” เพื่อฝึกได้</p>
+      <div id="sheet" class="cards sheet"></div>
+    </section>
+  </main>
+
+  <footer>
+    รู้จำตัวอักษร ASL เท่านั้น ยังไม่ใช่ภาษามือเต็มรูปแบบ · ประมวลผลในเครื่อง ไม่มีการส่งภาพไปที่ไหน
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

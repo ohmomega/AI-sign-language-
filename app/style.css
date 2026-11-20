@@ -49,10 +49,18 @@ body {
 
 /* ---------- header ---------- */
 header { position: relative; padding: 28px 0 6px; }
+/* title: solid ink, no overlapping shadow; brand red lives in the marker stroke underneath */
 h1 {
-  margin: 0; font-size: clamp(2.6rem, 11vw, 3.8rem); line-height: .95;
-  letter-spacing: -.035em; text-shadow: 4px 4px 0 var(--red);
+  display: inline-block; position: relative; margin: 0;
+  font: 800 clamp(2.6rem, 11vw, 3.8rem)/1 "Bricolage Grotesque", sans-serif;
+  letter-spacing: 0; color: var(--ink); text-shadow: none;
 }
+h1::after {
+  content: ""; position: absolute; left: -4px; right: -6px; bottom: .02em; height: .26em;
+  background: var(--red); opacity: .85; border-radius: 3px 8px 4px 10px;
+  transform: rotate(-1.2deg); z-index: -1;
+}
+header { isolation: isolate; }
 .sub { margin: 10px 0 0; font-size: 1.15rem; font-weight: 500; }
 .asl-badge {
   display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;

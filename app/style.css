@@ -229,3 +229,9 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 2px dashed var(--muted
 footer p { margin: 8px 0; }
 footer b { color: var(--ink); }
 footer a { color: var(--blue); font-weight: 600; }
+
+/* Single letters people must recognise: Anuphan has a plain, unambiguous Q
+   (Bricolage's detached Q tail reads like "O" at small sizes). */
+.card b, .player-letter, .ring span, .text, input[type=text] {
+  font-family: "Anuphan", system-ui, sans-serif; font-weight: 700;
+}

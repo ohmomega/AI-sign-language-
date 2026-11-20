@@ -4,24 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Sign Talk</title>
-  <meta name="description" content="แปลตัวอักษรภาษามือ (ASL) จากกล้องเป็นข้อความ และแปลงข้อความกลับเป็นท่ามือ">
-  <meta name="theme-color" content="#0f766e">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✋</text></svg>">
+  <meta name="description" content="ชูมือหน้ากล้อง แล้วมันจะสะกดเป็นตัวอักษรให้ (ASL A–Z)">
+  <meta name="theme-color" content="#F3EEE4">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><path d='M38 168H78V150C46 138 30 112 30 84 30 46 61 22 100 22s70 24 70 62c0 28-16 54-48 66v18h40' fill='none' stroke='%23E5402F' stroke-width='26' stroke-linecap='round' stroke-linejoin='round' transform='translate(8 6)'/><path d='M38 168H78V150C46 138 30 112 30 84 30 46 61 22 100 22s70 24 70 62c0 28-16 54-48 66v18h40' fill='none' stroke='%232350C8' stroke-width='26' stroke-linecap='round' stroke-linejoin='round'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Anuphan:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- shared SVG bits: wobble filter for hand-drawn lines, paper grain -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="wobble"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="3"/></filter>
+    <filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0 0.12  0 0 0 .5 0"/></filter>
+  </svg>
+  <svg class="grain" aria-hidden="true"><rect width="100%" height="100%" filter="url(#noise)"/></svg>
+
   <header>
-    <h1>✋ Sign Talk</h1>
-    <p class="sub">คุยกันด้วยการสะกดตัวอักษรภาษามือ (ASL A–Z)</p>
+    <svg class="doodle d1" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4v10M20 26v10M4 20h10M26 20h10"/></svg>
+    <svg class="doodle d2" viewBox="0 0 120 24" aria-hidden="true"><path d="M4 12q8-12 16 0t16 0 16 0 16 0 16 0 16 0"/></svg>
+    <h1 class="riso">sign talk</h1>
+    <p class="sub">ชูมือหน้ากล้อง แล้วมันจะสะกดให้ทีละตัว</p>
+    <a class="by" href="https://ko-fi.com/ohmomega" target="_blank" rel="noopener">by <b>Ω ohmomega</b></a>
   </header>
 
   <nav class="tabs" role="tablist">
-    <button role="tab" class="tab active" data-tab="read" aria-selected="true">👀 อ่านภาษามือ</button>
-    <button role="tab" class="tab" data-tab="reply" aria-selected="false">⌨️ ตอบกลับ</button>
-    <button role="tab" class="tab" data-tab="learn" aria-selected="false">📖 ท่ามือ A–Z</button>
+    <button role="tab" class="tab active" data-tab="read" aria-selected="true">อ่านมือ</button>
+    <button role="tab" class="tab" data-tab="reply" aria-selected="false">ตอบกลับ</button>
+    <button role="tab" class="tab" data-tab="learn" aria-selected="false">ท่า A–Z</button>
   </nav>
 
   <main>
@@ -30,7 +40,8 @@
       <div class="stage">
         <video id="video" playsinline muted></video>
         <canvas id="overlay"></canvas>
-        <div id="status" class="status">กดปุ่มด้านล่างเพื่อเปิดกล้อง</div>
+        <div id="status" class="status">ยังไม่ได้เปิดกล้อง</div>
+        <span class="tape">live</span>
         <div class="live" id="live" hidden>
           <div class="ring"><svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="16"/><circle id="ringFill" class="fill" cx="18" cy="18" r="16"/></svg><span id="liveLetter">–</span></div>
           <div class="conf"><div id="confBar"></div></div>
@@ -39,59 +50,61 @@
       </div>
 
       <div class="row">
-        <button id="startBtn" class="primary">📷 เปิดกล้อง</button>
-        <button id="flipBtn" hidden>🔄 สลับกล้อง</button>
+        <button id="startBtn" class="primary">เปิดกล้อง</button>
+        <button id="flipBtn" hidden>สลับกล้อง</button>
       </div>
 
-      <div class="output" aria-live="polite">
-        <div id="text" class="text"><span class="placeholder">ตัวอักษรที่อ่านได้จะขึ้นตรงนี้…</span></div>
+      <div class="note" aria-live="polite">
+        <span class="note-label">ได้ความว่า</span>
+        <div id="text" class="text"></div>
         <div class="row">
-          <button id="spaceBtn">␣ เว้นวรรค</button>
-          <button id="backBtn">⌫ ลบ</button>
-          <button id="clearBtn">🗑 ล้าง</button>
-          <button id="speakBtn" class="primary">🔊 อ่านออกเสียง</button>
+          <button id="spaceBtn">เว้นวรรค</button>
+          <button id="backBtn">ลบ</button>
+          <button id="clearBtn">ล้าง</button>
+          <button id="speakBtn" class="primary">อ่านออกเสียง</button>
         </div>
       </div>
 
       <details class="tips">
-        <summary>วิธีใช้ให้แม่น</summary>
+        <summary>ใช้ยังไงให้มันอ่านแม่น</summary>
         <ul>
-          <li>ชูมือข้างเดียวให้อยู่กลางจอ เห็นทั้งมือ แสงสว่างพอ</li>
-          <li><b>ค้างท่าไว้ประมาณ 1 วินาที</b> จนวงกลมเต็ม ตัวอักษรจะถูกพิมพ์</li>
-          <li>ถ้าจะพิมพ์ตัวซ้ำ (เช่น LL) ให้ลดมือลงแป๊บนึงแล้วทำใหม่</li>
-          <li>เอามือออกจากกล้องนานกว่า 1.5 วินาที = เว้นวรรคอัตโนมัติ</li>
-          <li>J กับ Z ใน ASL จริงต้องขยับมือ แอปนี้ดูจากท่านิ่ง เลยอาจแม่นน้อยกว่าตัวอื่น</li>
-          <li>ใช้มือถือหันกล้องหลังไปที่อีกฝ่ายได้ (ปุ่ม “สลับกล้อง”)</li>
+          <li>มือเดียวพอ ให้เห็นทั้งมือ อยู่กลางๆ จอ ที่สว่างหน่อยจะดีมาก</li>
+          <li><b>ค้างท่าไว้แป๊บนึง</b> (ประมาณวินาทีนึง) พอวงแดงครบรอบ ตัวอักษรก็จะลงไป</li>
+          <li>จะพิมพ์ตัวซ้ำอย่าง LL ให้ลดมือลงก่อน แล้วค่อยทำใหม่</li>
+          <li>เอามือออกจากกล้องสักพัก มันจะเว้นวรรคให้เอง</li>
+          <li>J กับ Z ของจริงต้องขยับมือ แต่อันนี้ดูจากท่านิ่ง เลยอาจงอแงหน่อย</li>
+          <li>ถ้าใช้มือถือ กด "สลับกล้อง" แล้วหันกล้องหลังไปหาอีกคนได้เลย</li>
         </ul>
       </details>
     </section>
 
     <!-- REPLY: text -> signs -->
     <section id="reply" class="panel">
-      <label for="replyInput" class="label">พิมพ์คำตอบ (ภาษาอังกฤษ)</label>
-      <input id="replyInput" type="text" autocomplete="off" autocapitalize="characters" placeholder="เช่น HELLO" maxlength="60">
+      <label for="replyInput" class="label">พิมพ์ที่อยากตอบ (ภาษาอังกฤษนะ)</label>
+      <input id="replyInput" type="text" autocomplete="off" autocapitalize="characters" placeholder="HELLO" maxlength="60">
       <div class="row">
-        <button id="playBtn" class="primary">▶ โชว์ทีละตัว</button>
-        <button id="replySpeakBtn">🔊 อ่านออกเสียง</button>
+        <button id="playBtn" class="primary">โชว์ทีละตัว</button>
+        <button id="replySpeakBtn">อ่านออกเสียง</button>
       </div>
       <div id="player" class="player" hidden>
         <img id="playerImg" alt="">
-        <div id="playerLetter" class="player-letter"></div>
-        <button id="playerClose" class="close" aria-label="ปิด">✕</button>
+        <div id="playerLetter" class="player-letter riso"></div>
+        <button id="playerClose" class="close" aria-label="ปิด">ปิด</button>
       </div>
       <div id="cards" class="cards"></div>
-      <p class="hint">หันจอให้อีกฝ่ายดู หรือกด “โชว์ทีละตัว” เพื่อขึ้นท่ามือทีละตัวแบบเต็มจอ</p>
+      <p class="hint">หันจอให้อีกคนดูได้เลย หรือกด "โชว์ทีละตัว" ให้มันขึ้นเต็มจอทีละท่า</p>
     </section>
 
     <!-- LEARN: cheat sheet -->
     <section id="learn" class="panel">
-      <p class="hint">ท่ามือจาก dataset ที่ถ่ายเอง — ลองทำตามหน้ากล้องในแท็บ “อ่านภาษามือ” เพื่อฝึกได้</p>
+      <p class="hint">ท่ามือทุกตัวในนี้ถ่ายเองทั้งหมด ลองทำตามหน้ากล้องในแท็บ "อ่านมือ" ดูได้ ถ้ามันอ่านออกแปลว่าทำถูก</p>
       <div id="sheet" class="cards sheet"></div>
     </section>
   </main>
 
   <footer>
-    รู้จำตัวอักษร ASL เท่านั้น ยังไม่ใช่ภาษามือเต็มรูปแบบ · ประมวลผลในเครื่อง ไม่มีการส่งภาพไปที่ไหน
+    <p>เริ่มจากการบ้านวิชา AI ตอนปี 2 ที่ไม่อยากปล่อยให้ dataset นอนอยู่ในเครื่องเฉยๆ</p>
+    <p class="small">อ่านได้แค่ตัวอักษร ASL นะ ยังไม่ใช่ภาษามือเต็มๆ · ภาพจากกล้องอยู่ในเครื่องคุณ ไม่ได้ส่งไปไหน</p>
   </footer>
 
   <script type="module" src="app.js"></script>

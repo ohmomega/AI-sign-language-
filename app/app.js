@@ -55,7 +55,7 @@ let text = "";
 let flashIdx = -1;
 function renderText() {
   const el = $("text");
-  if (!text) { el.innerHTML = '<span class="placeholder">ตัวอักษรที่อ่านได้จะขึ้นตรงนี้…</span>'; return; }
+  if (!text) { el.innerHTML = '<span class="placeholder">ยังว่างอยู่ ลองชูมือดูสิ</span>'; return; }
   el.innerHTML = "";
   [...text].forEach((ch, i) => {
     const s = document.createElement("span");
@@ -107,7 +107,7 @@ function status(msg) { $("status").textContent = msg; }
 
 async function initLandmarker() {
   if (landmarker) return;
-  status("กำลังโหลดโมเดล AI…");
+  status("รอแป๊บ กำลังโหลด…");
   const fileset = await FilesetResolver.forVisionTasks(WASM);
   const opts = (delegate) => ({
     baseOptions: { modelAssetPath: "hand_landmarker.task", delegate },
@@ -140,14 +140,14 @@ async function startCamera() {
     status("");
     $("live").hidden = false;
     $("flipBtn").hidden = false;
-    $("startBtn").textContent = "⏹ ปิดกล้อง";
+    $("startBtn").textContent = "ปิดกล้อง";
     $("startBtn").disabled = false;
     $("startBtn").onclick = stopCamera;
     if (!running) { running = true; requestAnimationFrame(loop); }
   } catch (err) {
     console.error(err);
     status(err && err.name === "NotAllowedError"
-      ? "ไม่ได้รับอนุญาตให้ใช้กล้อง — กดอนุญาตที่แถบที่อยู่เว็บแล้วลองใหม่"
+      ? "เบราว์เซอร์ไม่ยอมให้ใช้กล้อง ลองกดอนุญาตตรงแถบที่อยู่เว็บ แล้วกดเปิดใหม่"
       : "เปิดกล้องไม่ได้: " + (err.message || err));
     $("startBtn").disabled = false;
   }
@@ -161,8 +161,8 @@ function stopCamera() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   $("live").hidden = true;
   $("flipBtn").hidden = true;
-  status("กดปุ่มด้านล่างเพื่อเปิดกล้อง");
-  $("startBtn").textContent = "📷 เปิดกล้อง";
+  status("ยังไม่ได้เปิดกล้อง");
+  $("startBtn").textContent = "เปิดกล้อง";
   $("startBtn").onclick = startCamera;
 }
 
@@ -188,8 +188,8 @@ function loop() {
   }
   const lm = res.landmarks[0];
   const du = new DrawingUtils(ctx);
-  du.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: "#2dd4bf", lineWidth: 4 });
-  du.drawLandmarks(lm, { color: "#ffffff", fillColor: "#0f766e", radius: 4, lineWidth: 1 });
+  du.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: "#E5402F", lineWidth: 4 });
+  du.drawLandmarks(lm, { color: "#F3EEE4", fillColor: "#2350C8", radius: 4, lineWidth: 1 });
 
   const pts = lm.map((p) => [p.x * w, p.y * h, p.z * w]);
   const probs = predict(features(pts));
@@ -207,7 +207,7 @@ function onLetter(letter, conf, now) {
   lastHandSeen = now;
   $("liveLetter").textContent = letter;
   $("confBar").style.width = Math.round(conf * 100) + "%";
-  $("confText").textContent = conf >= MIN_CONF ? `มั่นใจ ${Math.round(conf * 100)}%` : "ยังไม่แน่ใจ…";
+  $("confText").textContent = conf >= MIN_CONF ? `ชัวร์ ${Math.round(conf * 100)}%` : "ยังไม่ชัวร์";
 
   if (conf < MIN_CONF) { holdLetter = null; setRing(0); return; }
   if (letter !== holdLetter) { holdLetter = letter; holdStart = now; }
@@ -229,7 +229,7 @@ function onNoHand(now) {
   setRing(0);
   $("liveLetter").textContent = "–";
   $("confBar").style.width = "0%";
-  $("confText").textContent = "ไม่เห็นมือ";
+  $("confText").textContent = "ยังไม่เห็นมือ";
   if (typedSinceSpace && now - lastHandSeen > SPACE_AFTER_MS) {
     typeChar(" ");
     typedSinceSpace = false;
@@ -244,7 +244,7 @@ function card(ch) {
     d.innerHTML = `<img src="signs/${ch}.jpg" alt="ท่ามือตัว ${ch}" loading="lazy"><b>${ch}</b>`;
   } else {
     d.className = "card gap";
-    d.textContent = ch === " " ? "เว้นวรรค" : ch;
+    d.textContent = ch === " " ? "เว้น" : ch;
   }
   return d;
 }

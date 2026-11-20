@@ -29,7 +29,7 @@ body {
   background-image: radial-gradient(var(--dot) 1.2px, transparent 1.3px);
   background-size: 24px 24px;
   color: var(--ink);
-  font: 16px/1.6 "Anuphan", system-ui, sans-serif;
+  font: 18px/1.7 "Anuphan", system-ui, sans-serif;
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px 40px;
@@ -53,22 +53,48 @@ h1 {
   margin: 0; font-size: clamp(2.6rem, 11vw, 3.8rem); line-height: .95;
   letter-spacing: -.035em; text-shadow: 4px 4px 0 var(--red);
 }
-.sub { margin: 10px 0 0; font-size: 1.05rem; }
-.by {
-  display: inline-block; margin-top: 10px; padding: 3px 12px;
-  border: 2px solid var(--ink); border-radius: 999px; transform: rotate(-2deg);
-  color: var(--ink); text-decoration: none; font-family: "Bricolage Grotesque"; font-size: .9rem;
+.sub { margin: 10px 0 0; font-size: 1.15rem; font-weight: 500; }
+.asl-badge {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  margin: 14px 0 0; padding: 8px 14px;
+  background: var(--card); border: 2.5px solid var(--ink); border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--red); font-size: 1rem;
 }
-.by b { font-weight: 500; color: var(--blue); }
+.asl-badge b { color: var(--blue); font-weight: 700; }
+.asl-badge span { color: var(--muted); font-size: .95rem; }
 .doodle { position: absolute; fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; filter: url(#wobble); }
 .doodle.d1 { width: 30px; right: 18px; top: 26px; }
-.doodle.d2 { width: 90px; right: 4px; top: 92px; stroke: var(--red); }
+
+/* ---------- intro / how-to ---------- */
+.intro {
+  margin-top: 24px; padding: 18px 18px 14px;
+  background: var(--card); border: 2.5px solid var(--ink); border-radius: 12px;
+}
+.intro h2 { margin: 0 0 6px; font-size: 1.3rem; color: var(--blue); }
+.intro h2 + p { margin-top: 0; }
+.intro p { margin: 6px 0 14px; }
+.what { margin: 0 0 18px; padding-left: 1.2em; }
+.what li { margin: 4px 0; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.steps li { display: flex; gap: 12px; align-items: flex-start; }
+.num {
+  flex: none; width: 36px; height: 36px; display: grid; place-items: center;
+  border: 2.5px solid var(--ink); border-radius: 50%; background: var(--red); color: #fff;
+  font: 800 1.1rem "Bricolage Grotesque";
+}
+.note-small { color: var(--muted); font-size: 1rem; margin-top: 16px !important; }
+.link-btn {
+  background: none; border: none; box-shadow: none; padding: 6px 0; min-height: 0;
+  color: var(--blue); text-decoration: underline; text-underline-offset: 4px; font-weight: 600;
+}
+.link-btn:active { transform: none; }
+.show-intro { margin-top: 14px; }
 
 /* ---------- tabs ---------- */
 .tabs { display: flex; gap: 10px; margin: 22px 0 18px; flex-wrap: wrap; }
 .tab {
-  font-family: "Bricolage Grotesque", "Anuphan", sans-serif; font-weight: 500;
-  background: transparent; box-shadow: none; border-style: dashed; color: var(--muted);
+  font-weight: 600;
+  background: transparent; box-shadow: none; border-style: dashed; color: var(--ink);
 }
 .tab.active {
   background: var(--blue); color: var(--on-blue); border: 2.5px solid var(--blue);
@@ -89,6 +115,8 @@ button {
 }
 button:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
 button.primary { background: var(--red); color: #fff; }
+button.big { font-size: 1.15rem; padding: 10px 26px; }
+.lead { margin: 0 0 14px; font-size: 1.05rem; }
 button:disabled { opacity: .5; cursor: default; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
 
@@ -112,7 +140,7 @@ button:disabled { opacity: .5; cursor: default; }
 }
 
 .live {
-  position: absolute; right: 10px; top: 10px; width: 100px; padding: 8px;
+  position: absolute; right: 10px; top: 10px; width: 112px; padding: 8px;
   background: #F3EEE4; color: #1C1B22; border: 2.5px solid #1C1B22; border-radius: 10px;
   text-align: center; transform: rotate(2deg);
 }
@@ -127,7 +155,7 @@ button:disabled { opacity: .5; cursor: default; }
 }
 .conf { height: 5px; background: #1c1b221a; border-radius: 3px; margin-top: 6px; overflow: hidden; }
 .conf div { height: 100%; width: 0; background: #2350C8; transition: width .1s; }
-.live small { display: block; margin-top: 3px; font-size: .78rem; }
+.live small { display: block; margin-top: 3px; font-size: .9rem; font-weight: 600; }
 
 /* ---------- typed text: a scrap of paper ---------- */
 .note {
@@ -141,8 +169,8 @@ button:disabled { opacity: .5; cursor: default; }
 }
 .text {
   font: 800 clamp(2rem, 8vw, 3rem)/1.15 "Bricolage Grotesque", sans-serif;
-  color: var(--blue); text-shadow: 3px 3px 0 var(--red);
-  letter-spacing: .04em; min-height: 1.3em; word-break: break-all;
+  color: var(--blue); text-shadow: 2px 2px 0 var(--red);
+  letter-spacing: .06em; min-height: 1.3em; word-break: break-all;
 }
 .text .placeholder {
   font: 400 1rem/1.6 "Anuphan", sans-serif; letter-spacing: 0; color: var(--muted); text-shadow: none;
@@ -189,8 +217,7 @@ input[type=text]:focus { outline: none; box-shadow: 4px 4px 0 var(--blue); }
 .player-letter { font-size: 5rem; line-height: 1; text-shadow: 5px 5px 0 var(--red); }
 .player .close { position: absolute; top: 16px; right: 16px; }
 
-.hint { color: var(--muted); }
-
-footer { margin-top: 40px; padding-top: 16px; border-top: 2px dashed var(--muted); color: var(--muted); }
-footer p { margin: 4px 0; }
-footer .small { font-size: .85rem; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 2px dashed var(--muted); color: var(--muted); font-size: 1rem; }
+footer p { margin: 8px 0; }
+footer b { color: var(--ink); }
+footer a { color: var(--blue); font-weight: 600; }

@@ -289,3 +289,16 @@ $("replySpeakBtn").onclick = () => speak(input.value);
 /* ---------------- learn sheet ---------------- */
 LETTERS.forEach((ch) => $("sheet").appendChild(card(ch)));
 renderText();
+
+/* ---------------- intro: shown until the visitor hides it ---------------- */
+function setIntro(show) {
+  $("intro").hidden = !show;
+  $("showIntro").hidden = show;
+  try { localStorage.setItem("introHidden", show ? "" : "1"); } catch {}
+}
+let introHidden = false;
+try { introHidden = localStorage.getItem("introHidden") === "1"; } catch {}
+$("intro").hidden = introHidden;
+$("showIntro").hidden = !introHidden;
+$("hideIntro").onclick = () => setIntro(false);
+$("showIntro").onclick = () => setIntro(true);
